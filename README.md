@@ -1,10 +1,6 @@
-Here is a comprehensive `README.md` for your FastAPI project. It covers the installation, directory structure (crucial because of your relative file paths), API usage, input validation logic, and the logging system.
-
-***
-
 # Insurance Charges Prediction API
 
-This project is a RESTful API built with **FastAPI** that predicts medical insurance charges based on personal attributes. It utilizes three pre-trained machine learning models (Random Forest, Decision Tree, and XGBoost) to provide predictions.
+This project is a RESTful API built with FastAPI that predicts medical insurance charges based on personal attributes. It utilizes three pre-trained machine learning models (Random Forest, Decision Tree, and XGBoost) to provide predictions.
 
 The application includes robust input validation, custom middleware for performance tracking, and a logging system for request analytics.
 
