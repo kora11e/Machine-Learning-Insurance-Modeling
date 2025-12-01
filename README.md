@@ -1,4 +1,4 @@
-# Insurance Charges Prediction API
+# Insurance Charges Prediction with Fast API 
 
 This project is a RESTful API built with FastAPI that predicts medical insurance charges based on personal attributes. It utilizes three pre-trained machine learning models (Random Forest, Ensemble Decision Tree, and XGBoost) to provide predictions.
 
