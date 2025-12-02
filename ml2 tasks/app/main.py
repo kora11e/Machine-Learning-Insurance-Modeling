@@ -1,10 +1,19 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Security, HTTPException
 from fastapi.responses import JSONResponse, Response
 import pickle
 import numpy as np
 from pydantic import BaseModel, validator, ValidationError
 import os, time, logging, json
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+from fastapi.security.api_key import APIKeyHeader
+from starlette.status import HTTP_403_FORBIDDEN
+
+
+load_dotenv()
+API_KEY = os.getenv("API_KEY")
+api_key_header = APIKeyHeader(name=API_KEY, auto_error=False)
 
 #   print(os.getcwd())
 
@@ -94,6 +103,14 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+def get_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header == API_KEY:
+        return api_key_header
+    else:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN, detail="Invalid or missing API key"
+        )
+
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start = time.perf_counter()
@@ -102,6 +119,7 @@ async def add_process_time_header(request: Request, call_next):
     process_time = end - start
     response.headers["X-Process-Time"] = str(process_time)
     return response
+
 @app.middleware("http")
 async def analytics_middleware(request: Request, call_next):
 
@@ -165,7 +183,7 @@ def main():
     return{'message': 'Welcome to Insurance API'}
 
 @app.post('/predict_charge/rf')
-def predict_charge_rf(data : InsuranceData):
+def predict_charge_rf(data : InsuranceData, api_key: str = Security(get_api_key)):
     features = np.array(
         [[
             #list(data.__annotations__.keys())
@@ -188,7 +206,7 @@ def predict_charge_rf(data : InsuranceData):
     return {'predicted_price': float(prediction[0])}
 
 @app.post('/predict_charge/dt')
-def predict_charge_dt(data : InsuranceData):
+def predict_charge_dt(data : InsuranceData, api_key: str = Security(get_api_key)):
     features = np.array(
         [[
             data.age, 
@@ -211,7 +229,7 @@ def predict_charge_dt(data : InsuranceData):
 
 
 @app.post('/predict_charge/xgb')
-def predict_charge_xgb(data : InsuranceData):
+def predict_charge_xgb(data : InsuranceData, api_key: str = Security(get_api_key)):
     features = np.array(
         [[
             data.age, 
