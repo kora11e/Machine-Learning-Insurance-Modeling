@@ -1,10 +1,18 @@
 # Insurance Charges Prediction with Fast API 
 
+## Regression Model
+
+This notebook focuses on building and evaluating regression models to predict target outcomes based on input features using machine learning techniques. The project explores several regression algorithms — including Linear Regression, Decision Tree Regressor, Random Forest, and XGBoost Regressor — to identify the most effective predictive model.
+
+After extensive feature engineering, hyperparameter optimization, and performance evaluation, the XGBoost Regressor emerged as the best-performing model. It demonstrated strong predictive accuracy and robustness, achieving an R² score of 0.87 and a Mean Absolute Percentage Error (MAPE) of 14% on the test dataset.
+
+These results indicate that the XGBoost model explains approximately 87% of the variance in the target variable and maintains low relative prediction error, showcasing its reliability for real-world forecasting tasks. The notebook includes detailed steps for data preprocessing, model training, performance comparison, and error visualization to ensure transparency and reproducibility.
+
 This project is a RESTful API built with FastAPI that predicts medical insurance charges based on personal attributes. It utilizes three pre-trained machine learning models (Random Forest, Ensemble Decision Tree, and XGBoost) to provide predictions.
 
 The application includes robust input validation, custom middleware for performance tracking, and a logging system for request analytics.
 
-## Features
+## API Features
 
 *   Multi-Model Support: Choose between Random Forest, Decision Tree, or XGBoost for predictions.
 *   Strict Validation: Pydantic models ensure data integrity (e.g., age limits, valid BMI ranges, correct One-Hot Encoding sums).
