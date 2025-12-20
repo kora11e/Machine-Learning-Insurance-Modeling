@@ -1,6 +1,7 @@
 matplotlib == 3.10.6
 numpy == 2.3.2
 pandas == 2.3.2
+plotly
 sklearn == 1.7.1
 seaborn
 xgboost
@@ -12,3 +13,8 @@ pickle
 joblib
 starlette
 pydantics
+optuna
+torch
+torchviz
+shap 
+scipy

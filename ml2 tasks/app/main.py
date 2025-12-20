@@ -9,10 +9,12 @@ from dotenv import load_dotenv
 import os
 from fastapi.security.api_key import APIKeyHeader
 from starlette.status import HTTP_403_FORBIDDEN
-
+import torch
+import torch.nn as nn
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
+
 api_key_header = APIKeyHeader(name=API_KEY, auto_error=False)
 
 #   print(os.getcwd())
@@ -24,6 +26,39 @@ with open('../models/rf_regressor.pkl', 'rb') as f, \
     rf_model = pickle.load(f)
     dt_model = pickle.load(f2)
     xgb_model = pickle.load(f3)
+
+checkpoint = torch.load("regression_model.pt", map_location="cpu")
+
+INPUT_SIZE = checkpoint["input_size"]
+
+class RegressionNet(nn.Module):
+    def __init__(self, input_dim, hidden_size, n_layers, dropout_rate):
+        super().__init__()
+        layers = []
+        in_dim = input_dim
+
+        for _ in range(n_layers):
+            layers.extend([
+                nn.Linear(in_dim, hidden_size),
+                nn.ReLU()
+            ])
+            in_dim = hidden_size
+
+        layers.append(nn.Linear(in_dim, 1))
+        self.network = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x)
+
+model = RegressionNet(
+    input_dim=INPUT_SIZE,
+    hidden_size=256,      
+    n_layers=2,         
+    dropout_rate=0.3360      
+)
+
+model.load_state_dict(checkpoint["model_state_dict"])
+model.eval()
 
 app = FastAPI(title='Insurance Charges Prediction')
 
@@ -117,12 +152,54 @@ class InsuranceData(BaseModel):
             raise ValueError("region one-hot encoding must have exactly one 1")
         return v
 
-
 logging.basicConfig(
     filename="analytics.log",
     format="%(message)s",
     level=logging.INFO
 )
+
+#extract for nn only
+def extract_features_nn(data: InsuranceData) -> np.ndarray:
+    feature_order = [
+        "age", "bmi", "bmi_category_normal", "bmi_category_obese",
+        "bmi_category_overweight", "bmi_category_underweight", "children",
+        "sex_0", "sex_1", "region_0", "region_1", "region_2", "region_3",
+        "smoker_0", "smoker_1",
+        "age_group_0_25", "age_group_26_35", "age_group_36_45",
+        "age_group_46_55", "age_group_55_65"
+    ]
+    values = [float(getattr(data, f)) for f in feature_order]
+    return np.array([values], dtype=np.float32)
+
+def extract_features(data: InsuranceData) -> np.ndarray:
+    """
+    Convert an InsuranceData object into a numpy feature array of shape (1, n_features)
+    """
+    feature_order = [
+        "age",
+        "bmi",
+        "bmi_category_normal",
+        "bmi_category_obese",
+        "bmi_category_overweight",
+        "bmi_category_underweight",
+        "children",
+        "sex_0",
+        "sex_1",
+        "region_0",
+        "region_1",
+        "region_2",
+        "region_3",
+        "smoker_0",
+        "smoker_1",
+        "age_group_0_25",
+        "age_group_26_35",
+        "age_group_36_45",
+        "age_group_46_55",
+        "age_group_55_65",
+    ]
+    values = [getattr(data, f) for f in feature_order]
+    return np.array([values], dtype=float)
+
 
 def get_api_key(api_key_header: str = Security(api_key_header)):
     if api_key_header == API_KEY:
@@ -145,21 +222,15 @@ async def add_process_time_header(request: Request, call_next):
 async def analytics_middleware(request: Request, call_next):
 
     start = time.perf_counter()
-
-    # --- REQUEST SIZE ---
     try:
         body_bytes = await request.body()
         request_size = len(body_bytes)
     except Exception:
         request_size = 0
 
-    # Must recreate request object because body() was consumed
     request = Request(scope=request.scope, receive=lambda: {"type": "http.request", "body": body_bytes})
 
-    # --- PROCESS REQUEST ---
     response = await call_next(request)
-
-    # --- CAPTURE STREAMING RESPONSE BODY SAFELY ---
     response_body = b""
     async for chunk in response.body_iterator:
         response_body += chunk
@@ -173,11 +244,8 @@ async def analytics_middleware(request: Request, call_next):
         media_type=response.media_type
     )
 
-    # --- TIMING ---
     end = time.perf_counter()
     process_time = end - start
-
-    # --- ANALYTICS DATA ---
     analytics_data = {
         "timestamp": datetime.utcnow().isoformat(),
         "method": request.method,
@@ -192,7 +260,6 @@ async def analytics_middleware(request: Request, call_next):
 
     logging.info(json.dumps(analytics_data))
 
-    # --- EXTRA HEADERS ---
     new_response.headers["X-Process-Time"] = str(process_time)
     new_response.headers["X-Request-Size"] = str(request_size)
     new_response.headers["X-Response-Size"] = str(response_size)
@@ -205,94 +272,31 @@ def main():
 
 @app.post('/predict_charge/rf')
 def predict_charge_rf(data : InsuranceData, api_key: str = Security(get_api_key)):
-    features = np.array(
-        [[
-            data.age, 
-            data.bmi, 
-            data.bmi_category_normal,
-            data.bmi_category_obese,
-            data.bmi_category_overweight,
-            data.bmi_category_underweight,
-            data.children,
-            data.sex_0, 
-            data.sex_1, 
-            data.region_0,
-            data.region_1,
-            data.region_2,
-            data.region_3, 
-            data.smoker_0,
-            data.smoker_1,
-            data.age_group_0_25,
-            data.age_group_26_35,
-            data.age_group_36_45,
-            data.age_group_46_55,
-            data.age_group_55_65
-        ]]
-    )
-
+    features = extract_features(data)
     prediction = rf_model.predict(features)
 
     return {'predicted_price': float(prediction[0])}
 
+#outdated, kept for testing
 @app.post('/predict_charge/dt')
 def predict_charge_dt(data : InsuranceData, api_key: str = Security(get_api_key)):
-    features = np.array(
-        [[
-            data.age, 
-            data.bmi, 
-            data.bmi_category_normal,
-            data.bmi_category_obese,
-            data.bmi_category_overweight,
-            data.bmi_category_underweight,
-            data.children,
-            data.sex_0, 
-            data.sex_1, 
-            data.region_0,
-            data.region_1,
-            data.region_2,
-            data.region_3, 
-            data.smoker_0,
-            data.smoker_1,
-            data.age_group_0_25,
-            data.age_group_26_35,
-            data.age_group_36_45,
-            data.age_group_46_55,
-            data.age_group_55_65
-        ]]
-    )
-    
+    features = extract_features(data)
     prediction = dt_model.predict(features)
-
     return {'predicted_price': float(prediction[0])}
-
 
 @app.post('/predict_charge/xgb')
 def predict_charge_xgb(data : InsuranceData, api_key: str = Security(get_api_key)):
-    features = np.array(
-        [[
-            data.age, 
-            data.bmi, 
-            data.bmi_category_normal,
-            data.bmi_category_obese,
-            data.bmi_category_overweight,
-            data.bmi_category_underweight,
-            data.children,
-            data.sex_0, 
-            data.sex_1, 
-            data.region_0,
-            data.region_1,
-            data.region_2,
-            data.region_3, 
-            data.smoker_0,
-            data.smoker_1,
-            data.age_group_0_25,
-            data.age_group_26_35,
-            data.age_group_36_45,
-            data.age_group_46_55,
-            data.age_group_55_65
-        ]]
-    )
-    
+    features = extract_features(data)
     prediction = xgb_model.predict(features)
 
     return {'predicted_price': float(prediction[0])}
+
+@app.post('/predict_charge/nn')
+def predict_charge_nn(data: InsuranceData, api_key: str = Security(get_api_key)):
+    features = extract_features_nn(data)
+    x_tensor = torch.from_numpy(features)
+
+    with torch.no_grad():
+        prediction = model(x_tensor).item()
+
+    return {"predicted_price": float(prediction)}
