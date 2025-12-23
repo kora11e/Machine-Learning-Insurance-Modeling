@@ -18,3 +18,5 @@ torch
 torchviz
 shap 
 scipy
+tensorflow==2.15.0
+Jinja2
