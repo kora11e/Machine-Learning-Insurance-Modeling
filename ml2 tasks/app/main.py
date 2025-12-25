@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Security, HTTPException
 from fastapi.responses import JSONResponse, Response
-import pickle
+import joblib
 import numpy as np
 from pydantic import BaseModel, validator, ValidationError
 import os, time, logging, json
@@ -11,6 +11,14 @@ from fastapi.security.api_key import APIKeyHeader
 from starlette.status import HTTP_403_FORBIDDEN
 import torch
 import torch.nn as nn
+import sys
+
+#sys.setrecursionlimit(5000)
+
+app = FastAPI(title='Insurance Charges Prediction')
+
+rf_model = None
+xgb_model = None
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
@@ -19,18 +27,21 @@ api_key_header = APIKeyHeader(name=API_KEY, auto_error=False)
 
 #   print(os.getcwd())
 
-with open('../models/rf_regressor.pkl', 'rb') as f, \
-     open('../models/dt_regressor.pkl', 'rb') as f2, \
-     open('../models/xgb_regressor.pkl', 'rb') as f3:
-    
-    rf_model = pickle.load(f)
-    dt_model = pickle.load(f2)
-    xgb_model = pickle.load(f3)
+@app.on_event("startup")
+def load_models():
+    global rf_model, xgb_model
 
-checkpoint = torch.load("regression_model.pt", map_location="cpu")
+    rf_model = joblib.load("./models/rf_regressor.pkl")
+    xgb_model = joblib.load("./models/xgb_regressor.pkl")
+
+    print("Models loaded successfully")
+
+'''
+checkpoint = torch.load("./models/regression_model.pt", map_location="cpu")
 
 INPUT_SIZE = checkpoint["input_size"]
 
+print(checkpoint)
 class RegressionNet(nn.Module):
     def __init__(self, input_dim, hidden_size, n_layers, dropout_rate):
         super().__init__()
@@ -60,7 +71,8 @@ model = RegressionNet(
 model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
 
-app = FastAPI(title='Insurance Charges Prediction')
+print(model)
+'''
 
 class InsuranceData(BaseModel):
     age:        int
@@ -200,7 +212,6 @@ def extract_features(data: InsuranceData) -> np.ndarray:
     values = [getattr(data, f) for f in feature_order]
     return np.array([values], dtype=float)
 
-
 def get_api_key(api_key_header: str = Security(api_key_header)):
     if api_key_header == API_KEY:
         return api_key_header
@@ -277,13 +288,6 @@ def predict_charge_rf(data : InsuranceData, api_key: str = Security(get_api_key)
 
     return {'predicted_price': float(prediction[0])}
 
-#outdated, kept for testing
-@app.post('/predict_charge/dt')
-def predict_charge_dt(data : InsuranceData, api_key: str = Security(get_api_key)):
-    features = extract_features(data)
-    prediction = dt_model.predict(features)
-    return {'predicted_price': float(prediction[0])}
-
 @app.post('/predict_charge/xgb')
 def predict_charge_xgb(data : InsuranceData, api_key: str = Security(get_api_key)):
     features = extract_features(data)
@@ -291,6 +295,7 @@ def predict_charge_xgb(data : InsuranceData, api_key: str = Security(get_api_key
 
     return {'predicted_price': float(prediction[0])}
 
+'''
 @app.post('/predict_charge/nn')
 def predict_charge_nn(data: InsuranceData, api_key: str = Security(get_api_key)):
     features = extract_features_nn(data)
@@ -300,3 +305,4 @@ def predict_charge_nn(data: InsuranceData, api_key: str = Security(get_api_key))
         prediction = model(x_tensor).item()
 
     return {"predicted_price": float(prediction)}
+'''

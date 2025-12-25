@@ -1,22 +1,21 @@
-matplotlib == 3.10.6
-numpy == 2.3.2
-pandas == 2.3.2
+matplotlib
+numpy>=1.26.0
+pandas
 plotly
-sklearn == 1.7.1
+scikit-learn
 seaborn
 xgboost
 joblib
-pickle
 graphviz
 fastapi
-pickle
 joblib
 starlette
-pydantics
+pydantic
 optuna
 torch
 torchviz
 shap 
 scipy
-tensorflow==2.15.0
+tensorflow
 Jinja2
+ipykernel

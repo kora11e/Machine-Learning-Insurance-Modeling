@@ -1,0 +1,11 @@
+#file for distribution on docker container
+matplotlib
+numpy>=1.26.0
+pandas
+joblib
+fastapi
+starlette
+pydantic
+Jinja2
+dotenv
+torch
