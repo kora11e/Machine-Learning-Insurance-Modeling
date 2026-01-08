@@ -14,7 +14,7 @@ docker pull karolrochalski/insurance-api:latest
 
 ### Regression Model
 
-This notebook focuses on building and evaluating regression models to predict target outcomes based on input features using machine learning techniques. The project explores several regression algorithms — including Linear Regression, Decision Tree Regressor, Random Forest, and XGBoost Regressor — to identify the most effective predictive model.
+This notebook focuses on building and evaluating regression models to predict target outcomes based on input features using machine learning techniques. The project explores several regression algorithms — including Linear Regression Deep Neural Network with dropout and normalization, Decision Tree Regressor, Random Forest, and XGBoost Regressor — to identify the most effective predictive model.
 
 After extensive feature engineering, hyperparameter optimization, and performance evaluation, the XGBoost Regressor emerged as the best-performing model. It demonstrated strong predictive accuracy and robustness, achieving an R² score of 0.87 and a Mean Absolute Percentage Error (MAPE) of 14% on the test dataset.
 
