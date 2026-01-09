@@ -1,13 +1,14 @@
-#file for distribution on docker container
-matplotlib
-numpy>=1.26.0
-pandas
-joblib
-fastapi
-starlette
-pydantic
-Jinja2
+alembic==1.17.2
+annotated-types==0.7.0
+anyio==4.12.1
+click==8.3.1
+colorlog==6.10.1
+fastapi==0.128.0
+joblib==1.5.3
+numpy==2.2.4
+pandas==2.3.3
+scikit-learn==1.6.1
+scipy==1.16.3
+uvicorn==0.40.0
+xgboost==3.1.2
 dotenv
-xgboost
-scikit-learn
-#torch

@@ -13,6 +13,8 @@ from starlette.status import HTTP_403_FORBIDDEN
 #import torch.nn as nn
 import sys
 
+#API KEY remains hidden for personal usage only
+
 #sys.setrecursionlimit(5000)
 
 app = FastAPI(title='Insurance Charges Prediction')
@@ -23,7 +25,7 @@ xgb_model = None
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
 
-api_key_header = APIKeyHeader(name=API_KEY, auto_error=False)
+api_key_header = APIKeyHeader(name='access_token', auto_error=False)
 
 #   print(os.getcwd())
 
@@ -31,8 +33,8 @@ api_key_header = APIKeyHeader(name=API_KEY, auto_error=False)
 def load_models():
     global rf_model, xgb_model
 
-    rf_model = joblib.load("./models/best_rf_regressor.pkl")
-    xgb_model = joblib.load("./models/best_xgb_regressor.pkl")
+    #rf_model = joblib.load("./models/best_rf_regressor.pkl")
+    #xgb_model = joblib.load("./models/best_xgb_regressor.pkl")
 
     print("Models loaded successfully")
 
